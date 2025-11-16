@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PPT → PDF Converter</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card">
+    <div class="header">
+      <h1>PPT → PDF</h1>
+      <p class="muted">Upload a PowerPoint file (.ppt / .pptx). Converted server-side to PDF.</p>
+    </div>
+
+    <div class="upload-area">
+      <label class="drop" id="drop">
+        <input id="file" type="file" accept=".ppt,.pptx" multiple />
+        <div class="drop-inner">
+          <svg width="48" height="48" viewBox="0 0 24 24" aria-hidden>
+            <path d="M12 3v9" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 10l5 5 5-5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div>Choose file or drag it here</div>
+          <div class="hint">Select one or more .ppt / .pptx files</div>
+        </div>
+      </label>
+    </div>
+
+    <div class="controls">
+      <div class="controls-row">
+        <button id="convert" class="btn">Convert to PDF</button>
+        <button id="reset" class="btn secondary" hidden>Reset</button>
+      </div>
+      <div id="status" class="status">Ready</div>
+    </div>
+
+    <div id="progressWrap" class="progress-wrap" hidden>
+      <div class="progress-bar" id="progressBar" style="width:0%"></div>
+    </div>
+
+    <div id="fileList" class="file-list" aria-live="polite"></div>
+    <div id="result" class="result"></div>
+    <div class="footer muted">LibreOffice required on server. No auth/rate-limit here.</div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
