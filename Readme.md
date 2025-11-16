@@ -100,4 +100,4 @@ License
 - MIT
 
 Contact
-- Developer: Abhishek Shah — include contact details here if you wish.
+- Developer: Abhishek Shah — shahabhishek409@gmail.com
