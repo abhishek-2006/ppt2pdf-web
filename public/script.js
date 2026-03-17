@@ -1,4 +1,3 @@
-// script.js - minimal frontend UX
 const fileInput = document.getElementById('file');
 const convertBtn = document.getElementById('convert');
 const resetBtn = document.getElementById('reset');
@@ -32,17 +31,14 @@ function addFiles(filesArray) {
   if (!filesArray || filesArray.length === 0) return;
   let added = 0;
   for (const f of filesArray) {
-    // Basic validation: must be ppt/pptx
     const ext = (f.name || '').split('.').pop().toLowerCase();
     if (!(ext === 'ppt' || ext === 'pptx')) continue;
-    // avoid duplicates by name+size+lastModified
     if (!currentFiles.some(existing => existing.name === f.name && existing.size === f.size && existing.lastModified === f.lastModified)) {
       currentFiles.push(f);
       added++;
     }
   }
   try { fileInput.files = createFileList(currentFiles); } catch (e) { /* ignore */ }
-  // clear native input so picking the same file again will fire change
   if (added > 0) renderFileList();
 }
 
@@ -52,6 +48,7 @@ resetBtn.addEventListener('click', () => {
 });
 
 convertBtn.addEventListener('click', () => {
+  const status = document.getElementById('status');
   result.innerHTML = '';
   if (!currentFiles || currentFiles.length === 0) { status.textContent = 'Pick one or more .ppt or .pptx files.'; return; }
 
@@ -90,12 +87,20 @@ convertBtn.addEventListener('click', () => {
         if (json && json.downloadUrl) {
           const a = document.createElement('a');
           a.href = json.downloadUrl;
-          a.className = 'download';
-          a.textContent = json.filename && json.filename.toLowerCase().endsWith('.zip') ? 'Download ZIP' : 'Download PDF';
+
+          a.className = 'download inline-flex items-center gap-2 px-6 py-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold rounded-xl hover:bg-emerald-500/20 hover:scale-105 transition-all duration-300 shadow-lg shadow-emerald-500/10';
+          
+          const isZip = json.filename && json.filename.toLowerCase().endsWith('.zip');
+          a.innerHTML = `
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            <span>${isZip ? 'Download PDFs (ZIP)' : 'Download PDF'}</span>
+          `;
+
           if (json.filename) a.download = json.filename;
           result.appendChild(a);
-          status.textContent = 'Conversion ready. Click the download button.';
-          // After conversion, keep the selected files visible and allow reset or further actions
+          status.textContent = 'Finished. Click the download button.';
         } else {
           status.textContent = 'Conversion succeeded but no download link returned.';
         }
@@ -121,42 +126,45 @@ convertBtn.addEventListener('click', () => {
   xhr.send(form);
 });
 
-// Helper: render the selected files list with remove icons
-function renderFileList() {
+async function renderFileList() {
+  const fileListEl = document.getElementById('fileList');
+  const emptyState = document.getElementById('empty-state');
+  const resetBtn = document.getElementById('reset');
+  const status = document.getElementById('status');
+  
   fileListEl.innerHTML = '';
+
   if (!currentFiles || currentFiles.length === 0) {
-    fileListEl.textContent = '';
+    if (emptyState) emptyState.classList.remove('hidden');
     status.textContent = 'Ready';
-    // hide reset button when no files selected
     if (resetBtn) resetBtn.hidden = true;
-    // restore drop area to full mode
-    restoreDropDefault();
     return;
   }
 
-  const grid = document.createElement('div');
-  grid.className = 'previews';
+  // Hide empty state if files exist
+  if (emptyState) emptyState.classList.add('hidden');
+  if (resetBtn) resetBtn.hidden = false;
 
+  // Create the grid container if it doesn't exist or just use fileListEl
   currentFiles.forEach((f, idx) => {
     const p = document.createElement('div');
-    p.className = 'preview';
+    p.className = 'preview-card relative group bg-white/5 border border-white/10 rounded-2xl p-4 transition-all hover:bg-white/10';
 
     const wrap = document.createElement('div');
-    wrap.className = 'preview-wrap';
+    wrap.className = 'aspect-video rounded-xl overflow-hidden bg-black/20 mb-3 relative';
 
     const remove = document.createElement('button');
-    remove.className = 'preview-remove';
-    remove.type = 'button';
-    remove.setAttribute('aria-label', `Remove ${f.name}`);
-    remove.textContent = '✖';
+    remove.className = 'absolute top-2 right-2 p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all z-10';
+    remove.innerHTML = '✕';
     remove.addEventListener('click', () => { removeFileAt(idx); });
 
     const thumb = document.createElement('div');
-    thumb.className = 'preview-thumb';
-
-    // Start with a static placeholder
+    thumb.className = 'w-full h-full flex items-center justify-center';
+    thumb.id = `thumb-container-${idx}`;
+    
+    // Initial placeholder
     const img = document.createElement('img');
-    img.alt = f.name;
+    img.className = 'max-h-full object-contain';
     img.src = makePlaceholder(getExt(f.name));
 
     thumb.appendChild(img);
@@ -164,23 +172,44 @@ function renderFileList() {
     wrap.appendChild(thumb);
 
     const fname = document.createElement('div');
-    fname.className = 'preview-filename';
+    fname.className = 'text-sm font-medium truncate text-slate-300 px-1';
     fname.textContent = f.name;
 
     p.appendChild(wrap);
     p.appendChild(fname);
-    grid.appendChild(p);
+    fileListEl.appendChild(p);
 
-    // Request server-side PDF generation and client-side PDF.js rendering for preview
-    renderPptPreviewFromPdfBytes(f, thumb); // Changed imgElement to thumb to directly replace content
   });
 
-  fileListEl.appendChild(grid);
+  await processPreviewsSequentially();
+
   status.textContent = `${currentFiles.length} file(s) selected`;
-  // show reset button when at least one file selected
-  if (resetBtn) resetBtn.hidden = false;
-  // change drop area to compact add-tile
-  setDropCompact();
+}
+
+// In script.js: Update the loop to be sequential
+async function renderAllPreviews() {
+  for (let i = 0; i < currentFiles.length; i++) {
+    const thumb = document.getElementById(`thumb-${i}`);
+    if (thumb && !thumb.dataset.rendered) {
+      await renderPptPreviewFromPdfBytes(currentFiles[i], thumb);
+      thumb.dataset.rendered = "true";
+    }
+  }
+}
+
+async function processPreviewsSequentially() {
+  for (let i = 0; i < currentFiles.length; i++) {
+    const thumbContainer = document.getElementById(`thumb-container-${i}`);
+    if (thumbContainer) {
+      thumbContainer.innerHTML = '<div class="text-[10px] text-cyan-400 animate-pulse">Processing...</div>';
+      
+      try {
+        await renderPptPreviewFromPdfBytes(currentFiles[i], thumbContainer);
+      } catch (e) {
+        console.error(`Failed to render preview ${i}:`, e);
+      }
+    }
+  }
 }
 
 // Toggle drop area to a compact 'add more' state
@@ -206,17 +235,13 @@ function removeFileAt(index) {
 }
 
 function resetSelection() {
-  // Clear state and UI immediately so filenames are not visible after reset
   currentFiles = [];
   try { fileInput.value = ''; } catch (e) {}
-  // wipe preview/file list and result immediately
-  try { fileListEl.innerHTML = ''; } catch (e) {}
+  
+  renderFileList();
+  
   try { result.innerHTML = ''; } catch (e) {}
-  // hide reset button and restore drop area
-  if (resetBtn) resetBtn.hidden = true;
   status.textContent = 'Ready';
-  restoreDropDefault();
-  return;
 }
 
 // Utility: create a DataTransfer-based FileList from an array of File objects
@@ -226,7 +251,6 @@ function createFileList(files) {
     files.forEach(f => dt.items.add(f));
     return dt.files;
   } catch (e) {
-    // DataTransfer may not be available in some environments; return existing input.files
     return fileInput.files;
   }
 }
@@ -244,49 +268,37 @@ function makePlaceholder(ext) {
 // Upload a PPT/PPTX to the server, get PDF bytes, and render first page client-side with PDF.js
 async function renderPptPreviewFromPdfBytes(file, thumbElement) {
   if (!file || !thumbElement) return;
+  
   try {
     const fd = new FormData();
     fd.append('file', file);
 
-    // show loading placeholder
-    thumbElement.innerHTML = '';
-    const loading = document.createElement('div');
-    loading.style.width = '100%'; loading.style.height = '100%'; loading.style.display = 'flex'; loading.style.alignItems = 'center'; loading.style.justifyContent = 'center'; loading.style.color = '#9ab';
-    loading.textContent = 'Rendering...';
-    thumbElement.appendChild(loading);
-
     const resp = await fetch('/preview-pdf', { method: 'POST', body: fd });
-    if (!resp.ok) {
-      console.warn('preview-pdf failed', resp.status);
-      thumbElement.innerHTML = `<div style="font-size:0.8rem;color:#d66;text-align:center;padding:5px;">No Preview</div>`;
-      return;
-    }
+    if (!resp.ok) throw new Error('Preview failed');
 
     const arrayBuffer = await resp.arrayBuffer();
     const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     const page = await pdfDoc.getPage(1);
+    
+    // Calculate scale to fit the whole-page view grid
     const viewport = page.getViewport({ scale: 1 });
-
-    const targetHeight = thumbElement.clientHeight || 84;
-    const scale = targetHeight / viewport.height;
+    const targetWidth = thumbElement.clientWidth || 300;
+    const scale = targetWidth / viewport.width;
     const scaledViewport = page.getViewport({ scale });
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    canvas.width = Math.ceil(scaledViewport.width);
-    canvas.height = Math.ceil(scaledViewport.height);
+    canvas.width = scaledViewport.width;
+    canvas.height = scaledViewport.height;
 
     await page.render({ canvasContext: ctx, viewport: scaledViewport }).promise;
 
-    // place canvas into thumb
     thumbElement.innerHTML = '';
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.display = 'block';
+    canvas.className = 'w-full h-full object-contain';
     thumbElement.appendChild(canvas);
   } catch (err) {
-    console.warn('renderPptPreviewFromPdfBytes error', err);
-    thumbElement.innerHTML = `<div style="font-size:0.8rem;color:#d66;text-align:center;padding:5px;">No Preview</div>`;
+    console.error('Render error:', err);
+    thumbElement.innerHTML = `<div class="text-[10px] text-red-400">Preview Unavailable</div>`;
   }
 }
 
