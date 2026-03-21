@@ -34,8 +34,8 @@
   
   <nav class="w-full px-8 py-4 bg-[#07102a]/50 border-b border-white/5 backdrop-blur-md flex items-center justify-between sticky top-0 z-50">
     <div class="flex items-center gap-4">
-      <div class="p-2 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
-        <img src="favicon.png" alt="Logo" class="w-6 h-6">
+      <div class="p-1 bg-cyan-500/10 rounded-xl border border-cyan-500/20">
+        <img src="favicon.png" alt="Logo" class="w-12 h-12 object-contain">
       </div>
       <h1 class="text-xl font-black tracking-tight bg-gradient-to-r from-cyan-400 to-purple-500 bg-clip-text text-transparent">
         PPT → PDF
@@ -79,9 +79,12 @@
 
     <section id="content-wrapper" class="flex-1 bg-black/10 p-8 overflow-y-auto">
       <div class="max-w-7xl mx-auto">
-        <div class="flex items-center justify-between mb-8">
-          <h3 class="text-2xl font-black text-white">Active Queue</h3>
-          <div id="result" class="flex items-center p-4 min-h-[80px] rounded-2xl transition-all"></div>
+        <div class="flex flex-col gap-6 mb-8">
+          <div class="flex items-center justify-between">
+            <h3 class="text-2xl font-black text-white">Active Queue</h3>
+          </div>
+
+          <div id="result" class="flex flex-col items-center p-8 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl transition-all empty:hidden animate-in fade-in duration-500"></div>
         </div>
 
         <div id="fileList" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">

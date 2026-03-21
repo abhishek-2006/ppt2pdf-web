@@ -88,7 +88,7 @@ convertBtn.addEventListener('click', () => {
           const a = document.createElement('a');
           a.href = json.downloadUrl;
 
-          a.className = 'download inline-flex items-center gap-2 px-6 py-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold rounded-xl hover:bg-emerald-500/20 hover:scale-105 transition-all duration-300 shadow-lg shadow-emerald-500/10';
+          a.className = 'download group flex items-center gap-4 px-10 py-5 bg-gradient-to-r from-emerald-500 to-teal-600 border border-emerald-500/20 text-white font-bold rounded-xl hover:bg-emerald-500/20 hover:scale-105 hover:shadow-[0_0_30px_rgba(16,182,129,0.4)] transition-all duration-300 shadow-emerald-500/10';
           
           const isZip = json.filename && json.filename.toLowerCase().endsWith('.zip');
           a.innerHTML = `
