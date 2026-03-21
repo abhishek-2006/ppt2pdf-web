@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Allow: /favicon.png
+Disallow: /convert
+Disallow: /preview-pdf
+Disallow: /download/

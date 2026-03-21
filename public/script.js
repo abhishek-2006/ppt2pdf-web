@@ -129,6 +129,7 @@ convertBtn.addEventListener('click', () => {
 async function renderFileList() {
   const fileListEl = document.getElementById('fileList');
   const emptyState = document.getElementById('empty-state');
+  const convertBtn = document.getElementById('convert');
   const resetBtn = document.getElementById('reset');
   const status = document.getElementById('status');
   
@@ -136,13 +137,15 @@ async function renderFileList() {
 
   if (!currentFiles || currentFiles.length === 0) {
     if (emptyState) emptyState.classList.remove('hidden');
-    status.textContent = 'Ready';
+    if (convertBtn) convertBtn.disabled = true;
     if (resetBtn) resetBtn.hidden = true;
+    status.textContent = 'Ready';
     return;
   }
 
   // Hide empty state if files exist
   if (emptyState) emptyState.classList.add('hidden');
+  if (convertBtn) convertBtn.disabled = false;
   if (resetBtn) resetBtn.hidden = false;
 
   // Create the grid container if it doesn't exist or just use fileListEl

@@ -1,13 +1,14 @@
 {
   "name": "ppt-to-pdf-web",
   "version": "1.0.0",
-  "description": "Simple PPT/PPTX -> PDF converter (frontend + Node.js backend using LibreOffice)",
+  "description": "PPT/PPTX -> PDF converter (frontend + Node.js backend using LibreOffice)",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"
   },
-  "author": "you",
+  "author": "Abhishek Shah",
   "license": "MIT",
   "dependencies": {
     "archiver": "^5.3.2",
